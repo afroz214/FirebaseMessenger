@@ -5,14 +5,21 @@ import android.content.Intent
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Parcelable
 import android.text.TextUtils
+import android.util.Log
 import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.*
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.android.parcel.Parcelize
 import kotlinx.android.synthetic.main.activity_main.*
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
+
+    var firebaseAuth:FirebaseAuth? = null
+    var firebaseDatabase:DatabaseReference? = null
 
     var images:Uri? =null
 
@@ -84,7 +91,29 @@ class MainActivity : AppCompatActivity() {
        val ref =  FirebaseStorage.getInstance().getReference("/images/$filename")
         ref.putFile(images!!).addOnSuccessListener {
 
+            ref.downloadUrl.addOnSuccessListener {
+
+                savedUserToFirebaseDatabase(it.toString())
+            }
+
         }
+    }
+    private fun savedUserToFirebaseDatabase(profileImageUrl:String) {
+
+        val uids = FirebaseAuth.getInstance().uid ?: ""
+        val ref = FirebaseDatabase.getInstance().getReference("/users/$uids")
+
+        val user = User(uids, email_main.text.toString(), profileImageUrl)
+        ref.setValue(user).addOnSuccessListener {
+
+            Log.d("MainActivity", "Saved user Successfully")
+            val intent = Intent(this@MainActivity, LatestMessagesActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK.or(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(intent)
+
+        }
+
     }
 
 }
+
